@@ -1,0 +1,149 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f5f6f8;
+  color: #172b4d;
+  user-select: none;
+  overflow: hidden;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Header */
+.app-header {
+  height: 60px;
+  background-color: #0079bf;
+  color: white;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Board Container */
+.board-container {
+  height: calc(100vh - 60px);
+  padding: 20px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Column */
+.column {
+  background-color: #ebecf0;
+  width: 300px;
+  min-height: 100px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-right: 20px;
+  vertical-align: top;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.column-title {
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.task-list {
+  padding: 10px;
+  min-height: 100px;
+}
+
+/* Task */
+.task-card {
+  background: white;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.task-card:hover {
+  background-color: #f9f9f9;
+}
+
+.task-title {
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.task-description {
+  font-size: 14px;
+  color: #5e6c84;
+}
+
+/* Add Task Button */
+.add-task-btn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  color: #5e6c84;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-task-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Task Form */
+.task-form {
+  padding: 10px;
+}
+
+.task-form input,
+.task-form textarea {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.task-form-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.task-form-buttons button {
+  padding: 8px 12px;
+  margin-left: 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.save-btn {
+  background-color: #0079bf;
+  color: white;
+  border: none;
+}
+
+.cancel-btn {
+  background-color: transparent;
+  border: 1px solid #ddd;
+}

@@ -1,0 +1,37 @@
+{
+  "name": "nanoban",
+  "version": "1.0.0",
+  "description": "Nanoban é um quadro Kanban para uso pessoal, organização e acompanhamento das etapas do desenvolvimento dos projetos pessoais.",
+  "main": "main.js",
+  "author": "Matheus Silva",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "license": "MIT",
+  "build": {
+    "appId": "br.dev.dimi.kanban",
+    "productName": "Nanoban",
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Office"
+    }
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.1",
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^19.0.0"
+  }
+}
