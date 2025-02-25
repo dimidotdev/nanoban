@@ -6,22 +6,19 @@
   "author": "Matheus Silva",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
   "license": "MIT",
   "build": {
-    "appId": "br.dev.dimi.nanoban",
-    "productName": "Nanoban",
-    "mac": {
-      "category": "public.app-category.productivity"
+    "appId": "com.dimidotdev.kanbanboard",
+    "productName": "Kanban Board",
+    "directories": {
+      "output": "dist"
     },
     "win": {
-      "target": "nsis"
-    },
-    "linux": {
-      "target": "AppImage",
-      "category": "Office"
+      "icon": "build/icon.ico"
     }
   },
   "devDependencies": {
