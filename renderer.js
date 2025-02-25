@@ -1,9 +1,122 @@
 const { ipcRenderer } = require('electron');
 const React = require('react');
-const ReactDOM = require('react-dom/client'); // Importação atualizada
+const ReactDOM = require('react-dom/client');
 const { DragDropContext, Droppable, Draggable } = require('react-beautiful-dnd');
 
-// Componente de cartão de tarefa
+// Componente para seleção de prioridade
+const PrioritySelector = ({ priority, onChange }) => {
+  return React.createElement(
+    'div',
+    { className: 'form-group' },
+    React.createElement('label', null, 'Prioridade:'),
+    React.createElement(
+      'select',
+      {
+        value: priority || 'medium',
+        onChange: (e) => onChange(e.target.value),
+        className: 'priority-selector'
+      },
+      React.createElement('option', { value: 'high' }, 'Alta'),
+      React.createElement('option', { value: 'medium' }, 'Média'),
+      React.createElement('option', { value: 'low' }, 'Baixa')
+    )
+  );
+};
+
+// Componente para data de vencimento
+const DatePicker = ({ dueDate, onChange }) => {
+  return React.createElement(
+    'div',
+    { className: 'form-group' },
+    React.createElement('label', null, 'Data de vencimento:'),
+    React.createElement(
+      'input',
+      {
+        type: 'date',
+        value: dueDate || '',
+        onChange: (e) => onChange(e.target.value),
+        className: 'due-date-picker'
+      }
+    )
+  );
+};
+
+// Componente de badge de prioridade
+const PriorityBadge = ({ priority }) => {
+  const priorityColors = {
+    high: '#e53e3e',    // Vermelho para alta prioridade
+    medium: '#ed8936',  // Laranja para média prioridade
+    low: '#38a169'      // Verde para baixa prioridade
+  };
+  
+  const priorityLabels = {
+    high: 'Alta',
+    medium: 'Média',
+    low: 'Baixa'
+  };
+  
+  return React.createElement(
+    'div',
+    { 
+      className: 'priority-badge',
+      style: {
+        backgroundColor: priorityColors[priority] || priorityColors.medium,
+        color: 'white',
+        padding: '2px 6px',
+        borderRadius: '3px',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        display: 'inline-block',
+        marginRight: '5px'
+      }
+    },
+    priorityLabels[priority] || 'Média'
+  );
+};
+
+// Componente para exibição de data formatada
+const DueDate = ({ date }) => {
+  if (!date) return null;
+  
+  const formattedDate = new Date(date).toLocaleDateString();
+  const isOverdue = new Date(date) < new Date() && new Date(date).setHours(0,0,0,0) !== new Date().setHours(0,0,0,0);
+  
+  return React.createElement(
+    'div',
+    {
+      className: 'due-date',
+      style: {
+        fontSize: '12px',
+        color: isOverdue ? '#e53e3e' : '#718096',
+        marginTop: '5px',
+        display: 'flex',
+        alignItems: 'center'
+      }
+    },
+    React.createElement(
+      'span',
+      { 
+        className: 'date-icon',
+        style: { marginRight: '5px' }
+      },
+      '📅'
+    ),
+    formattedDate,
+    isOverdue ? React.createElement(
+      'span',
+      { 
+        style: { 
+          color: '#e53e3e',
+          marginLeft: '5px',
+          fontWeight: 'bold'
+        }
+      },
+      '(Atrasado)'
+    ) : null
+  );
+};
+
+// Componente de cartão de tarefa atualizado
 const TaskCard = ({ task, index, onEditTask }) => {
   return React.createElement(
     Draggable,
@@ -18,17 +131,33 @@ const TaskCard = ({ task, index, onEditTask }) => {
           ...provided.dragHandleProps,
           onClick: () => onEditTask(task.id)
         },
-        React.createElement('div', { className: 'task-title' }, task.title),
-        React.createElement('div', { className: 'task-description' }, task.description)
+        React.createElement(
+          'div',
+          { 
+            className: 'task-header',
+            style: {
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '5px',
+              alignItems: 'center'
+            }
+          },
+          React.createElement('div', { className: 'task-title' }, task.title),
+          task.priority ? React.createElement(PriorityBadge, { priority: task.priority }) : null
+        ),
+        React.createElement('div', { className: 'task-description' }, task.description),
+        task.dueDate ? React.createElement(DueDate, { date: task.dueDate }) : null
       );
     }
   );
 };
 
-// Componente de formulário para adicionar/editar tarefas
+// Formulário de tarefa atualizado
 const TaskForm = ({ columnId, task = null, onSave, onCancel }) => {
   const [title, setTitle] = React.useState(task ? task.title : '');
   const [description, setDescription] = React.useState(task ? task.description : '');
+  const [priority, setPriority] = React.useState(task ? task.priority || 'medium' : 'medium');
+  const [dueDate, setDueDate] = React.useState(task ? task.dueDate || '' : '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -36,10 +165,14 @@ const TaskForm = ({ columnId, task = null, onSave, onCancel }) => {
       onSave(columnId, {
         id: task ? task.id : Date.now().toString(),
         title: title.trim(),
-        description: description.trim()
+        description: description.trim(),
+        priority: priority,
+        dueDate: dueDate
       });
       setTitle('');
       setDescription('');
+      setPriority('medium');
+      setDueDate('');
     }
   };
 
@@ -58,6 +191,14 @@ const TaskForm = ({ columnId, task = null, onSave, onCancel }) => {
       onChange: (e) => setDescription(e.target.value),
       placeholder: 'Descrição',
       rows: 3
+    }),
+    React.createElement(PrioritySelector, {
+      priority: priority,
+      onChange: setPriority
+    }),
+    React.createElement(DatePicker, {
+      dueDate: dueDate,
+      onChange: setDueDate
     }),
     React.createElement(
       'div',
@@ -265,7 +406,8 @@ const App = () => {
           backgroundColor: 'rgba(0,0,0,0.5)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          zIndex: 1000
         }
       },
       React.createElement(
@@ -275,7 +417,8 @@ const App = () => {
             backgroundColor: 'white',
             padding: '20px',
             borderRadius: '5px',
-            width: '500px'
+            width: '500px',
+            maxWidth: '90%'
           }
         },
         React.createElement(
@@ -329,4 +472,4 @@ const App = () => {
 
 // Renderiza o aplicativo React usando a nova API do React 18
 const root = ReactDOM.createRoot(document.getElementById('app'));
-root.render(React.createElement(App));
+root.render(React.createElement(App));v
