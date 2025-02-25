@@ -125,8 +125,7 @@ ipcMain.on('save-board', (event, boardData) => {
 
 // Comunicação IPC para carregar dados
 ipcMain.handle('load-board', async () => {
-  const data = loadData();
-  return data.boardData || {
+  return loadData().boardData || {
     columns: {
       'column-1': {
         id: 'column-1',

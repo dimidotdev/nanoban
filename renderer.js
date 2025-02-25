@@ -231,11 +231,15 @@ const TaskForm = ({ columnId, task = null, onSave, onCancel }) => {
 };
 
 // Componente de coluna
-const Column = ({ column, tasks, onAddTask, onEditTask, activeForm, setActiveForm }) => {
+const Column = ({ column, tasks, onAddTask, onEditTask, onRenameColumn, onDeleteColumn, activeForm, setActiveForm }) => {
   return React.createElement(
     'div',
     { className: 'column' },
-    React.createElement('div', { className: 'column-title' }, column.title),
+    React.createElement(ColumnHeader, {
+      column: column,
+      onRename: onRenameColumn,
+      onDelete: onDeleteColumn
+    }),
     React.createElement(
       Droppable,
       { droppableId: column.id },
@@ -276,13 +280,210 @@ const Column = ({ column, tasks, onAddTask, onEditTask, activeForm, setActiveFor
   );
 };
 
-// Componente principal do aplicativo Kanban
+// Componente para cabeçalho da coluna editável
+const ColumnHeader = ({ column, onRename, onDelete }) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [title, setTitle] = React.useState(column.title);
+  const inputRef = React.useRef(null);
+
+  // Foca no input quando o modo de edição é ativado
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (title.trim()) {
+      onRename(column.id, title.trim());
+      setIsEditing(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setTitle(column.title);
+      setIsEditing(false);
+    }
+  };
+
+  const handleBlur = () => {
+    if (title.trim()) {
+      onRename(column.id, title.trim());
+    } else {
+      setTitle(column.title);
+    }
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return React.createElement(
+      'div',
+      { className: 'column-header editing' },
+      React.createElement(
+        'form',
+        { onSubmit: handleSubmit },
+        React.createElement('input', {
+          ref: inputRef,
+          type: 'text',
+          value: title,
+          onChange: (e) => setTitle(e.target.value),
+          onBlur: handleBlur,
+          onKeyDown: handleKeyDown,
+          className: 'column-title-input'
+        })
+      )
+    );
+  }
+
+  return React.createElement(
+    'div',
+    { className: 'column-header' },
+    React.createElement(
+      'div',
+      { 
+        className: 'column-title',
+        onDoubleClick: () => setIsEditing(true)
+      },
+      column.title
+    ),
+    React.createElement(
+      'button',
+      { 
+        className: 'column-delete-btn',
+        onClick: () => onDelete(column.id),
+        title: 'Excluir coluna'
+      },
+      '×'
+    )
+  );
+};
+
+// Componente para adicionar nova coluna
+const AddColumnButton = ({ onAddColumn }) => {
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [title, setTitle] = React.useState('');
+  const inputRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (isAdding && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isAdding]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (title.trim()) {
+      onAddColumn(title.trim());
+      setTitle('');
+      setIsAdding(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setTitle('');
+    setIsAdding(false);
+  };
+
+  if (isAdding) {
+    return React.createElement(
+      'div',
+      { className: 'add-column-form' },
+      React.createElement(
+        'form',
+        { onSubmit: handleSubmit },
+        React.createElement('input', {
+          ref: inputRef,
+          type: 'text',
+          value: title,
+          onChange: (e) => setTitle(e.target.value),
+          placeholder: 'Insira o título da coluna...',
+          className: 'add-column-input'
+        }),
+        React.createElement(
+          'div',
+          { className: 'add-column-buttons' },
+          React.createElement(
+            'button',
+            { type: 'submit', className: 'add-column-submit' },
+            'Adicionar'
+          ),
+          React.createElement(
+            'button',
+            { type: 'button', className: 'add-column-cancel', onClick: handleCancel },
+            'Cancelar'
+          )
+        )
+      )
+    );
+  }
+
+  return React.createElement(
+    'div',
+    { className: 'add-column-button-container' },
+    React.createElement(
+      'button',
+      { className: 'add-column-button', onClick: () => setIsAdding(true) },
+      '+ Adicionar Coluna'
+    )
+  );
+};
+
+// Componente de diálogo de confirmação para exclusão de coluna
+const DeleteColumnDialog = ({ column, onConfirm, onCancel }) => {
+  const taskCount = column.taskIds.length;
+
+  return React.createElement(
+    'div',
+    { 
+      className: 'dialog-overlay', 
+      onClick: onCancel 
+    },
+    React.createElement(
+      'div',
+      { 
+        className: 'dialog-content delete-column-dialog',
+        onClick: e => e.stopPropagation()
+      },
+      React.createElement('h2', null, 'Excluir Coluna'),
+      React.createElement(
+        'p',
+        null,
+        `Tem certeza que deseja excluir a coluna "${column.title}"?`
+      ),
+      taskCount > 0 ? React.createElement(
+        'p',
+        { className: 'warning-text' },
+        `Esta coluna contém ${taskCount} tarefa${taskCount !== 1 ? 's' : ''}. Todas as tarefas serão excluídas permanentemente.`
+      ) : null,
+      React.createElement(
+        'div',
+        { className: 'dialog-buttons' },
+        React.createElement(
+          'button',
+          { className: 'cancel-btn', onClick: onCancel },
+          'Cancelar'
+        ),
+        React.createElement(
+          'button',
+          { className: 'delete-btn', onClick: onConfirm },
+          'Excluir'
+        )
+      )
+    )
+  );
+};
+
+// Componente principal do aplicativo Kanban com gerenciamento de colunas
 const App = () => {
   const [boardData, setBoardData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [activeForm, setActiveForm] = React.useState(null);
   const [editingTask, setEditingTask] = React.useState(null);
   const [darkMode, setDarkMode] = React.useState(false);
+  const [deletingColumn, setDeletingColumn] = React.useState(null);
 
   // Carrega os dados ao iniciar
   React.useEffect(() => {
@@ -312,17 +513,17 @@ const App = () => {
     }
   }, [boardData, loading]);
 
-    // Função para alternar o tema
-    const toggleTheme = () => {
-      const newDarkMode = !darkMode;
-      setDarkMode(newDarkMode);
-      if (newDarkMode) {
-        document.body.classList.add('dark-theme');
-      } else {
-        document.body.classList.remove('dark-theme');
-      }
-      localStorage.setItem('darkMode', newDarkMode);
-    };
+  // Função para alternar o tema
+  const toggleTheme = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    if (newDarkMode) {
+      document.body.classList.add('dark-theme');
+    } else {
+      document.body.classList.remove('dark-theme');
+    }
+    localStorage.setItem('darkMode', newDarkMode);
+  };
 
   // Manipula a adição/edição de tarefas
   const handleSaveTask = (columnId, task) => {
@@ -343,7 +544,7 @@ const App = () => {
 
   // Manipula o drag and drop
   const handleDragEnd = (result) => {
-    const { destination, source, draggableId } = result;
+    const { destination, source, draggableId, type } = result;
 
     // Se não houver destino ou for o mesmo local, não faz nada
     if (!destination || (
@@ -353,6 +554,22 @@ const App = () => {
       return;
     }
 
+    // Se for drag and drop de uma coluna
+    if (type === 'column') {
+      const newColumnOrder = Array.from(boardData.columnOrder);
+      newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, draggableId);
+
+      const newBoardData = {
+        ...boardData,
+        columnOrder: newColumnOrder
+      };
+
+      setBoardData(newBoardData);
+      return;
+    }
+
+    // Se for drag and drop de uma tarefa
     const startColumn = boardData.columns[source.droppableId];
     const endColumn = boardData.columns[destination.droppableId];
 
@@ -405,15 +622,93 @@ const App = () => {
     }
   };
 
-  // Manipula o edição de uma tarefa
+  // Manipula a edição de uma tarefa
   const handleEditTask = (taskId) => {
     setActiveForm(null);
     setEditingTask(taskId);
   };
 
+  // Adiciona uma nova coluna
+  const handleAddColumn = (title) => {
+    const newColumnId = `column-${Date.now()}`;
+    const newBoardData = {
+      ...boardData,
+      columns: {
+        ...boardData.columns,
+        [newColumnId]: {
+          id: newColumnId,
+          title: title,
+          taskIds: []
+        }
+      },
+      columnOrder: [...boardData.columnOrder, newColumnId]
+    };
+    
+    setBoardData(newBoardData);
+  };
+
+  // Renomeia uma coluna
+  const handleRenameColumn = (columnId, newTitle) => {
+    if (boardData.columns[columnId].title === newTitle) return;
+    
+    const newBoardData = {
+      ...boardData,
+      columns: {
+        ...boardData.columns,
+        [columnId]: {
+          ...boardData.columns[columnId],
+          title: newTitle
+        }
+      }
+    };
+    
+    setBoardData(newBoardData);
+  };
+
+  // Inicia o processo de exclusão de coluna
+  const handleDeleteColumnStart = (columnId) => {
+    setDeletingColumn(columnId);
+  };
+
+  // Confirma a exclusão da coluna
+  const handleDeleteColumnConfirm = () => {
+    if (!deletingColumn) return;
+    
+    const columnId = deletingColumn;
+    const taskIdsToDelete = boardData.columns[columnId].taskIds;
+    
+    // Cria um novo objeto de tarefas sem as tarefas da coluna excluída
+    const newTasks = { ...boardData.tasks };
+    taskIdsToDelete.forEach(taskId => {
+      delete newTasks[taskId];
+    });
+    
+    // Cria um novo objeto de colunas sem a coluna excluída
+    const newColumns = { ...boardData.columns };
+    delete newColumns[columnId];
+    
+    // Atualiza a ordem de colunas
+    const newColumnOrder = boardData.columnOrder.filter(id => id !== columnId);
+    
+    const newBoardData = {
+      ...boardData,
+      tasks: newTasks,
+      columns: newColumns,
+      columnOrder: newColumnOrder
+    };
+    
+    setBoardData(newBoardData);
+    setDeletingColumn(null);
+  };
+
+  // Cancela a exclusão da coluna
+  const handleDeleteColumnCancel = () => {
+    setDeletingColumn(null);
+  };
+
   // Enquanto carrega, mostra uma mensagem
   if (loading) {
-    return React.createElement('div', null, 'Carregando...');
+    return React.createElement('div', { className: 'loading' }, 'Carregando...');
   }
 
   // Dialog para edição de tarefa
@@ -434,33 +729,18 @@ const App = () => {
     return React.createElement(
       'div',
       { 
-        style: {
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }
+        className: 'dialog-overlay',
+        onClick: () => setEditingTask(null)
       },
       React.createElement(
         'div',
         { 
-          style: {
-            backgroundColor: 'white',
-            padding: '20px',
-            borderRadius: '5px',
-            width: '500px',
-            maxWidth: '90%'
-          }
+          className: 'dialog-content',
+          onClick: e => e.stopPropagation()
         },
         React.createElement(
           'h2',
-          { style: { marginBottom: '15px' } },
+          { className: 'dialog-title' },
           'Editar Tarefa'
         ),
         React.createElement(TaskForm, {
@@ -471,6 +751,19 @@ const App = () => {
         })
       )
     );
+  };
+
+  // Dialog para confirmação de exclusão de coluna
+  const renderDeleteColumnDialog = () => {
+    if (!deletingColumn) return null;
+    
+    const column = boardData.columns[deletingColumn];
+    
+    return React.createElement(DeleteColumnDialog, {
+      column: column,
+      onConfirm: handleDeleteColumnConfirm,
+      onCancel: handleDeleteColumnCancel
+    });
   };
 
   return React.createElement(
@@ -486,25 +779,52 @@ const App = () => {
       DragDropContext,
       { onDragEnd: handleDragEnd },
       React.createElement(
-        'div',
-        { className: 'board-container' },
-        boardData.columnOrder.map(columnId => {
-          const column = boardData.columns[columnId];
-          const tasks = column.taskIds.map(taskId => boardData.tasks[taskId]);
-          
-          return React.createElement(Column, {
-            key: column.id,
-            column: column,
-            tasks: tasks,
-            onAddTask: handleSaveTask,
-            onEditTask: handleEditTask,
-            activeForm: activeForm,
-            setActiveForm: setActiveForm
-          });
-        })
+        Droppable,
+        { droppableId: 'board', direction: 'horizontal', type: 'column' },
+        (provided) => React.createElement(
+          'div',
+          { 
+            className: 'board-container',
+            ref: provided.innerRef,
+            ...provided.droppableProps
+          },
+          boardData.columnOrder.map((columnId, index) => {
+            const column = boardData.columns[columnId];
+            const tasks = column.taskIds.map(taskId => boardData.tasks[taskId]);
+            
+            return React.createElement(
+              Draggable,
+              { key: column.id, draggableId: column.id, index: index, type: 'column' },
+              (provided) => React.createElement(
+                'div',
+                { 
+                  className: 'column-container',
+                  ref: provided.innerRef,
+                  ...provided.draggableProps,
+                  ...provided.dragHandleProps
+                },
+                React.createElement(Column, {
+                  column: column,
+                  tasks: tasks,
+                  onAddTask: handleSaveTask,
+                  onEditTask: handleEditTask,
+                  onRenameColumn: handleRenameColumn,
+                  onDeleteColumn: handleDeleteColumnStart,
+                  activeForm: activeForm,
+                  setActiveForm: setActiveForm
+                })
+              )
+            );
+          }),
+          provided.placeholder,
+          React.createElement(AddColumnButton, {
+            onAddColumn: handleAddColumn
+          })
+        )
       )
     ),
-    renderEditDialog()
+    renderEditDialog(),
+    renderDeleteColumnDialog()
   );
 };
 
