@@ -533,62 +533,62 @@ const DeleteColumnDialog = ({ column, onConfirm, onCancel }) => {
   );
 };
 
-// Componente principal do aplicativo Kanban com gerenciamento de colunas
-  const App = () => {
-    const [boardData, setBoardData] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
-    const [activeForm, setActiveForm] = React.useState(null);
-    const [editingTask, setEditingTask] = React.useState(null);
-    const [darkMode, setDarkMode] = React.useState(false);
-    const [deletingColumn, setDeletingColumn] = React.useState(null);
-  
-    // Carrega os dados ao iniciar
-    React.useEffect(() => {
-      const loadData = async () => {
-        try {
-          const data = await ipcRenderer.invoke('load-board');
-          setBoardData(data);
-          
-          // Carregar preferência de tema
-          const themePreference = localStorage.getItem('darkMode');
-          if (themePreference !== null) {
-            const isDark = themePreference === 'true';
-            setDarkMode(isDark);
-            if (isDark) {
-              document.body.classList.add('dark-theme');
-            }
+// Componente principal da aplicação
+const App = () => {
+  const [boardData, setBoardData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [activeForm, setActiveForm] = React.useState(null);
+  const [editingTask, setEditingTask] = React.useState(null);
+  const [darkMode, setDarkMode] = React.useState(false);
+  const [deletingColumn, setDeletingColumn] = React.useState(null);
+
+  // Carrega os dados ao iniciar
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const data = await ipcRenderer.invoke('load-board');
+        setBoardData(data);
+        
+        // Carregar preferência de tema
+        const themePreference = localStorage.getItem('darkMode');
+        if (themePreference !== null) {
+          const isDark = themePreference === 'true';
+          setDarkMode(isDark);
+          if (isDark) {
+            document.body.classList.add('dark-theme');
           }
-        } catch (error) {
-          console.error("Erro ao carregar dados:", error);
-          // Se houver erro, carregamos um quadro padrão
-          setBoardData({
-            columns: {
-              'column-1': {
-                id: 'column-1',
-                title: 'Backlog',
-                taskIds: []
-              },
-              'column-2': {
-                id: 'column-2',
-                title: 'Em Andamento',
-                taskIds: []
-              },
-              'column-3': {
-                id: 'column-3',
-                title: 'Concluído',
-                taskIds: []
-              }
-            },
-            columnOrder: ['column-1', 'column-2', 'column-3'],
-            tasks: {}
-          });
-        } finally {
-          setLoading(false);  // Garantir que o loading termine, mesmo com erro
         }
-      };
-      
-      loadData();
-    }, []);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        // Se houver erro, carregamos um quadro padrão
+        setBoardData({
+          columns: {
+            'column-1': {
+              id: 'column-1',
+              title: 'Backlog',
+              taskIds: []
+            },
+            'column-2': {
+              id: 'column-2',
+              title: 'Em Andamento',
+              taskIds: []
+            },
+            'column-3': {
+              id: 'column-3',
+              title: 'Concluído',
+              taskIds: []
+            }
+          },
+          columnOrder: ['column-1', 'column-2', 'column-3'],
+          tasks: {}
+        });
+      } finally {
+        setLoading(false);  // Garantir que o loading termine, mesmo com erro
+      }
+    };
+    
+    loadData();
+  }, []);
     
 
   // Salva os dados quando houver alterações
@@ -850,10 +850,6 @@ const DeleteColumnDialog = ({ column, onConfirm, onCancel }) => {
       onCancel: handleDeleteColumnCancel
     });
   };
-
-  if (loading) {
-    return React.createElement('div', { className: 'loading' }, 'Carregando...');
-  }
   
   // Garantir que boardData existe antes de renderizar o quadro
   if (!boardData) {
