@@ -583,3 +583,65 @@ body {
   font-size: 18px;
   color: var(--text-color);
 }
+
+/* Estilos para a barra de título personalizada */
+.custom-titlebar {
+  height: 32px;
+  background-color: var(--header-bg);
+  color: var(--header-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  -webkit-app-region: drag; /* Permite arrastar a janela */
+  user-select: none;
+}
+
+.title-drag-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.window-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.window-controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag; /* Permite clicar nos botões */
+}
+
+.control-button {
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--header-text);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.control-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.control-button.close:hover {
+  background-color: #e81123;
+}
+
+/* Ajuste para o novo layout */
+.app-header {
+  padding-left: 10px;
+  height: 50px;
+}
+
+.board-container {
+  height: calc(100vh - 82px); /* 32px da titlebar + 50px do header */
+}

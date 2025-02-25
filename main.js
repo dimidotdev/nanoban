@@ -39,8 +39,39 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false
     },
-    icon: path.join(__dirname, 'assets', 'icon.png')
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+    // Removendo o frame padrão
+    frame: false,
+    // Adicionando transparência (opcional, para bordas arredondadas)
+    transparent: false,
+    // Tornando a janela arrastável (opcional)
+    titleBarStyle: 'hidden'
   });
+
+  // Comunicação IPC para controles da janela
+ipcMain.on('window-minimize', () => {
+  if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.on('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.on('window-close', () => {
+  if (mainWindow) {
+    if (app.isQuitting) {
+      mainWindow.close();
+    } else {
+      mainWindow.hide();
+    }
+  }
+});
 
   // Carrega o arquivo HTML da aplicação
   mainWindow.loadFile('index.html');
