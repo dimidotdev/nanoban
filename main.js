@@ -105,6 +105,19 @@ app.on('activate', () => {
   }
 });
 
+// Comunicação IPC para salvar o tema
+ipcMain.on('save-theme', (event, isDarkMode) => {
+  const storeData = loadData();
+  storeData.theme = { darkMode: isDarkMode };
+  saveData('theme', isDarkMode);
+});
+
+// Comunicação IPC para carregar o tema
+ipcMain.handle('load-theme', async () => {
+  const data = loadData();
+  return data.theme || { darkMode: false };
+});
+
 // Comunicação IPC para salvar dados
 ipcMain.on('save-board', (event, boardData) => {
   saveData('boardData', boardData);

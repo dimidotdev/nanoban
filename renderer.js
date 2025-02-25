@@ -116,6 +116,19 @@ const DueDate = ({ date }) => {
   );
 };
 
+const ThemeToggle = ({ darkMode, toggleTheme }) => {
+  return React.createElement(
+    'button',
+    {
+      className: 'theme-toggle',
+      onClick: toggleTheme,
+      title: darkMode ? 'Mudar para tema claro' : 'Mudar para tema escuro',
+      'aria-label': darkMode ? 'Tema claro' : 'Tema escuro'
+    },
+    darkMode ? '☀️' : '🌙'
+  );
+};
+
 // Componente de cartão de tarefa atualizado
 const TaskCard = ({ task, index, onEditTask }) => {
   return React.createElement(
@@ -269,12 +282,24 @@ const App = () => {
   const [loading, setLoading] = React.useState(true);
   const [activeForm, setActiveForm] = React.useState(null);
   const [editingTask, setEditingTask] = React.useState(null);
+  const [darkMode, setDarkMode] = React.useState(false);
 
   // Carrega os dados ao iniciar
   React.useEffect(() => {
     const loadData = async () => {
       const data = await ipcRenderer.invoke('load-board');
       setBoardData(data);
+      
+      // Carregar preferência de tema
+      const themePreference = localStorage.getItem('darkMode');
+      if (themePreference !== null) {
+        const isDark = themePreference === 'true';
+        setDarkMode(isDark);
+        if (isDark) {
+          document.body.classList.add('dark-theme');
+        }
+      }
+      
       setLoading(false);
     };
     loadData();
@@ -286,6 +311,18 @@ const App = () => {
       ipcRenderer.send('save-board', boardData);
     }
   }, [boardData, loading]);
+
+    // Função para alternar o tema
+    const toggleTheme = () => {
+      const newDarkMode = !darkMode;
+      setDarkMode(newDarkMode);
+      if (newDarkMode) {
+        document.body.classList.add('dark-theme');
+      } else {
+        document.body.classList.remove('dark-theme');
+      }
+      localStorage.setItem('darkMode', newDarkMode);
+    };
 
   // Manipula a adição/edição de tarefas
   const handleSaveTask = (columnId, task) => {
@@ -442,7 +479,8 @@ const App = () => {
     React.createElement(
       'div',
       { className: 'app-header' },
-      React.createElement('div', { className: 'logo' }, 'Kanban Board')
+      React.createElement('div', { className: 'logo' }, 'Kanban Board'),
+      React.createElement(ThemeToggle, { darkMode: darkMode, toggleTheme: toggleTheme })
     ),
     React.createElement(
       DragDropContext,

@@ -223,3 +223,153 @@ body {
   flex: 1;
   padding-right: 10px;
 }
+
+/* Variáveis para tema claro (padrão) */
+:root {
+  --bg-color: #f5f6f8;
+  --text-color: #172b4d;
+  --header-bg: #0079bf;
+  --header-text: white;
+  --column-bg: #ebecf0;
+  --card-bg: white;
+  --card-text: #172b4d;
+  --card-secondary-text: #5e6c84;
+  --shadow: rgba(0, 0, 0, 0.12);
+  --border-color: #ddd;
+  --form-bg: white;
+  --form-text: #172b4d;
+  --button-secondary-bg: #f4f5f7;
+  --button-secondary-text: #172b4d;
+  --button-primary-bg: #0079bf;
+  --button-primary-text: white;
+  --button-hover-bg: rgba(0, 0, 0, 0.05);
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+}
+
+/* Variáveis para tema escuro */
+.dark-theme {
+  --bg-color: #2d3748;
+  --text-color: #e2e8f0;
+  --header-bg: #1a202c;
+  --header-text: #e2e8f0;
+  --column-bg: #4a5568;
+  --card-bg: #2d3748;
+  --card-text: #e2e8f0;
+  --card-secondary-text: #a0aec0;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --border-color: #4a5568;
+  --form-bg: #1a202c;
+  --form-text: #e2e8f0;
+  --button-secondary-bg: #4a5568;
+  --button-secondary-text: #e2e8f0;
+  --button-primary-bg: #3182ce;
+  --button-primary-text: white;
+  --button-hover-bg: rgba(255, 255, 255, 0.05);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+}
+
+/* Aplicar variáveis a todos os elementos */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  user-select: none;
+  overflow: hidden;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.app-header {
+  background-color: var(--header-bg);
+  color: var(--header-text);
+  transition: background-color 0.3s;
+}
+
+.column {
+  background-color: var(--column-bg);
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: background-color 0.3s;
+}
+
+.task-card {
+  background-color: var(--card-bg);
+  color: var(--card-text);
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.task-card:hover {
+  background-color: var(--card-bg);
+  filter: brightness(1.05);
+}
+
+.task-description {
+  color: var(--card-secondary-text);
+  transition: color 0.3s;
+}
+
+.add-task-btn {
+  color: var(--card-secondary-text);
+  transition: color 0.3s;
+}
+
+.add-task-btn:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.task-form input,
+.task-form textarea,
+.task-form select {
+  background-color: var(--form-bg);
+  color: var(--form-text);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.cancel-btn {
+  background-color: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.save-btn {
+  background-color: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  transition: background-color 0.3s;
+}
+
+/* Botão de toggle do tema */
+.theme-toggle {
+  background: transparent;
+  border: none;
+  color: var(--header-text);
+  font-size: 20px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Estilo para o diálogo de edição no tema escuro */
+.edit-dialog {
+  background-color: var(--overlay-bg);
+}
+
+.dialog-content {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: 0 5px 15px var(--shadow);
+}
+
+/* Transição suave para todos os elementos */
+* {
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
