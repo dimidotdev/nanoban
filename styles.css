@@ -780,3 +780,297 @@ button, input, select, textarea {
   color: var(--btn-danger-bg);
   font-weight: 500;
 }
+
+/* Menu de opções de dados */
+.data-options-container {
+  position: relative;
+  margin-right: 16px;
+}
+
+.data-options-button {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.data-options-button span {
+  margin-right: 5px;
+  font-size: 16px;
+}
+
+.data-options-button:hover {
+  background: var(--btn-secondary-hover);
+}
+
+.data-options-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 180px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--column-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  margin-top: 4px;
+  z-index: 100;
+  animation: dropdownFadeIn 0.15s ease;
+  overflow: hidden;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.menu-item:hover {
+  background: var(--btn-secondary-bg);
+}
+
+.menu-item.danger {
+  color: var(--btn-danger-bg);
+}
+
+.menu-item.danger:hover {
+  background: rgba(229, 62, 62, 0.1);
+}
+
+.data-options-menu hr {
+  border: none;
+  height: 1px;
+  background: var(--column-border);
+  margin: 4px 0;
+}
+
+/* Layout para os controles do header */
+.header-controls {
+  display: flex;
+  align-items: center;
+}
+
+/* Notificações */
+.notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-left: 4px solid;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  animation: notificationFadeIn 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+@keyframes notificationFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification.success {
+  border-left-color: #48bb78;
+  color: var(--text-color);
+}
+
+.notification.error {
+  border-left-color: #f56565;
+  color: var(--text-color);
+}
+
+.close-notification {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  margin-left: 16px;
+}
+
+.close-notification:hover {
+  color: var(--text-color);
+}
+
+/* Estilos atualizados para o menu de dados */
+.data-options-container {
+  position: relative;
+  margin-right: 16px;
+}
+
+.data-options-button {
+  background: var(--btn-secondary-bg);
+  color: var(--text-color);
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.data-options-button:hover,
+.data-options-button.active {
+  background: var(--btn-secondary-hover);
+}
+
+.data-options-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--column-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: menuFadeIn 0.2s ease;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item {
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.menu-item:hover {
+  background: var(--btn-secondary-bg);
+}
+
+.menu-item.danger {
+  color: var(--btn-danger-bg);
+}
+
+.menu-item.danger:hover {
+  background: rgba(229, 62, 62, 0.1);
+}
+
+/* Estilos para notificações */
+.notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 400px;
+  animation: notificationSlide 0.3s ease;
+  z-index: 1000;
+}
+
+.notification.success {
+  border-left: 4px solid #48bb78;
+}
+
+.notification.error {
+  border-left: 4px solid #f56565;
+}
+
+@keyframes notificationSlide {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Estilos para o diálogo de confirmação */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  animation: dialogFadeIn 0.3s ease;
+}
+
+@keyframes dialogFadeIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

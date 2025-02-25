@@ -1,7 +1,5 @@
-const { ipcRenderer } = require('electron');
-const React = require('react');
-const ReactDOM = require('react-dom/client');
-const { DragDropContext, Droppable, Draggable } = require('react-beautiful-dnd');
+const { DragDropContext, Droppable, Draggable } = window.ReactBeautifulDnd;
+
 
 // Componente para seleção de prioridade
 const PrioritySelector = ({ priority, onChange }) => {
@@ -27,15 +25,15 @@ const PrioritySelector = ({ priority, onChange }) => {
 const TitleBar = ({ darkMode }) => {
   // Manipular eventos de controle da janela
   const handleMinimize = () => {
-    ipcRenderer.send('window-minimize');
+    window.electronAPI.minimize();
   };
   
   const handleMaximize = () => {
-    ipcRenderer.send('window-maximize');
+    window.electronAPI.maximize();
   };
   
   const handleClose = () => {
-    ipcRenderer.send('window-close');
+    window.electronAPI.close();
   };
 
   // Formato atual de data e usuário - você pode ajustar conforme necessário
@@ -130,6 +128,128 @@ const DatePicker = ({ dueDate, onChange }) => {
         onChange: (e) => onChange(e.target.value),
         className: 'due-date-picker'
       }
+    )
+  );
+};
+
+// Componente do menu de opções de dados
+const DataOptionsMenu = ({ onExport, onImport, onReset }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  const handleClick = (action) => {
+    action();
+    setIsOpen(false);
+  };
+
+  return React.createElement(
+    'div',
+    { 
+      className: 'data-options-container',
+      onBlur: (e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setIsOpen(false);
+        }
+      }
+    },
+    React.createElement(
+      'button',
+      {
+        className: `data-options-button ${isOpen ? 'active' : ''}`,
+        onClick: () => setIsOpen(!isOpen)
+      },
+      '⚙️ Dados'
+    ),
+    isOpen && React.createElement(
+      'div',
+      { className: 'data-options-menu' },
+      [
+        {
+          label: '📤 Exportar Dados',
+          onClick: () => handleClick(onExport),
+          className: 'menu-item'
+        },
+        {
+          label: '📥 Importar Dados',
+          onClick: () => handleClick(onImport),
+          className: 'menu-item'
+        },
+        {
+          label: '🗑️ Resetar Dados',
+          onClick: () => handleClick(onReset),
+          className: 'menu-item danger'
+        }
+      ].map((item, index) =>
+        React.createElement(
+          'button',
+          {
+            key: index,
+            className: item.className,
+            onClick: item.onClick
+          },
+          item.label
+        )
+      )
+    )
+  );
+};
+
+// Componente do diálogo de confirmação para reset
+const ConfirmResetDialog = ({ onConfirm, onCancel }) => {
+  return React.createElement(
+    'div',
+    { 
+      className: 'dialog-overlay', 
+      onClick: onCancel 
+    },
+    React.createElement(
+      'div',
+      { 
+        className: 'dialog-content reset-dialog',
+        onClick: e => e.stopPropagation()
+      },
+      React.createElement('h2', { className: 'dialog-title' }, 'Resetar Dados'),
+      React.createElement(
+        'p',
+        null,
+        'Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.'
+      ),
+      React.createElement(
+        'div',
+        { className: 'dialog-buttons' },
+        React.createElement(
+          'button',
+          { className: 'cancel-btn', onClick: onCancel },
+          'Cancelar'
+        ),
+        React.createElement(
+          'button',
+          { className: 'delete-btn', onClick: onConfirm },
+          'Resetar Tudo'
+        )
+      )
+    )
+  );
+};
+
+// Componente para exibir notificações
+const Notification = ({ message, type, onClose }) => {
+  React.useEffect(() => {
+    // Fechar automaticamente após 3 segundos
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, [onClose]);
+  
+  return React.createElement(
+    'div',
+    { className: `notification ${type}` },
+    message,
+    React.createElement(
+      'button',
+      { className: 'close-notification', onClick: onClose },
+      '×'
     )
   );
 };
@@ -667,34 +787,82 @@ const DeleteTaskDialog = ({ task, onConfirm, onCancel }) => {
 
 // Componente principal da aplicação
 const App = () => {
+  // 1. Estados
+  const [darkMode, setDarkMode] = React.useState(false);
   const [boardData, setBoardData] = React.useState(null);
+  const [notification, setNotification] = React.useState(null);
+  const [isConfirmingReset, setIsConfirmingReset] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+  const [currentTime, setCurrentTime] = React.useState('');
+  const [currentUser, setCurrentUser] = React.useState('');
   const [activeForm, setActiveForm] = React.useState(null);
   const [editingTask, setEditingTask] = React.useState(null);
-  const [darkMode, setDarkMode] = React.useState(false);
-  const [deletingColumn, setDeletingColumn] = React.useState(null);
   const [deletingTask, setDeletingTask] = React.useState(null);
+  const [deletingColumn, setDeletingColumn] = React.useState(null);
 
-  // Carrega os dados ao iniciar
+  // 2. Efeitos
   React.useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await ipcRenderer.invoke('load-board');
-        setBoardData(data);
-        
-        // Carregar preferência de tema
-        const themePreference = localStorage.getItem('darkMode');
-        if (themePreference !== null) {
-          const isDark = themePreference === 'true';
-          setDarkMode(isDark);
-          if (isDark) {
-            document.body.classList.add('dark-theme');
-          }
+    let mounted = true;
+  
+    const initialize = async () => {
+      if (mounted) {
+        try {
+          await loadInitialData();
+          await updateSystemInfo();
+        } catch (error) {
+          console.error('Erro na inicialização:', error);
         }
+      }
+    };
+  
+    initialize();
+  
+    const intervalId = setInterval(() => {
+      if (mounted) {
+        updateSystemInfo();
+      }
+    }, 60000);
+  
+    return () => {
+      mounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        const themeData = await window.electronAPI.loadTheme();
+        setDarkMode(themeData.darkMode);
+        document.body.classList.toggle('dark-theme', themeData.darkMode);
       } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        // Se houver erro, carregamos um quadro padrão
-        setBoardData({
+        console.error('Erro ao carregar tema:', error);
+      }
+    };
+    
+    loadTheme();
+  }, []);
+
+  // Efeito para salvar dados quando houver alterações
+  React.useEffect(() => {
+    if (boardData && !loading) {
+      window.electronAPI.saveBoardData(boardData)
+        .catch(error => console.error('Erro ao salvar dados:', error));
+    }
+  }, [boardData, loading]);
+
+  // 3. Funções auxiliares
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      const data = await window.electronAPI.loadBoardData();
+      
+      // Verificar se os dados são válidos
+      if (!data || !data.columns || !data.columnOrder || !data.tasks) {
+        console.error('Dados inválidos recebidos:', data);
+        // Criar estrutura inicial
+        const initialData = {
+          tasks: {},
           columns: {
             'column-1': {
               id: 'column-1',
@@ -712,199 +880,138 @@ const App = () => {
               taskIds: []
             }
           },
-          columnOrder: ['column-1', 'column-2', 'column-3'],
-          tasks: {}
-        });
-      } finally {
-        setLoading(false);  // Garantir que o loading termine, mesmo com erro
+          columnOrder: ['column-1', 'column-2', 'column-3']
+        };
+        setBoardData(initialData);
+      } else {
+        setBoardData(data);
       }
-    };
-    
-    loadData();
-  }, []);
-
-  // Função para iniciar o processo de exclusão
-  const handleDeleteTaskStart = (taskId) => {
-    setDeletingTask(taskId);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      showNotification(`Erro ao carregar dados: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Função para confirmar a exclusão da tarefa
-  const handleDeleteTaskConfirm = () => {
-    if (!deletingTask) return;
-    
-    const newBoardData = {...boardData};
-    
-    // Encontrar a coluna que contém a tarefa
-    let foundColumnId = null;
-    
-    Object.keys(newBoardData.columns).forEach(columnId => {
-      const column = newBoardData.columns[columnId];
-      if (column.taskIds.includes(deletingTask)) {
-        foundColumnId = columnId;
+  const updateSystemInfo = async () => {
+    try {
+      const time = await window.electronAPI.getCurrentDateTime();
+      const user = await window.electronAPI.getCurrentUser();
+      setCurrentTime(time);
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Erro ao carregar informações do sistema:', error);
+    }
+  };
+
+  const showNotification = (message, type) => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // 4. Handlers de Dados (Export/Import/Reset)
+  const handleExportData = async () => {
+    try {
+      setLoading(true);
+      const result = await window.electronAPI.exportBoard();
+      showNotification(
+        result.success ? 'Dados exportados com sucesso!' : result.message,
+        result.success ? 'success' : 'error'
+      );
+    } catch (error) {
+      showNotification(`Erro ao exportar dados: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImportData = async () => {
+    try {
+      setLoading(true);
+      const result = await window.electronAPI.importBoard();
+      if (result.success) {
+        setBoardData(result.data);
+        showNotification('Dados importados com sucesso!', 'success');
+      } else {
+        showNotification(result.message, 'error');
       }
-    });
-    
-    if (foundColumnId) {
-      // Remover a tarefa da coluna
-      const column = newBoardData.columns[foundColumnId];
-      const newTaskIds = column.taskIds.filter(id => id !== deletingTask);
-      
-      newBoardData.columns[foundColumnId] = {
-        ...column,
-        taskIds: newTaskIds
-      };
-      
-      // Excluir a tarefa do objeto de tarefas
-      delete newBoardData.tasks[deletingTask];
-      
-      setBoardData(newBoardData);
+    } catch (error) {
+      showNotification(`Erro ao importar dados: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
     }
-    
-    setDeletingTask(null);
   };
 
-  // Função para cancelar a exclusão
-  const handleDeleteTaskCancel = () => {
-    setDeletingTask(null);
-  };
+  const handleResetData = () => setIsConfirmingReset(true);
 
-  const renderDeleteTaskDialog = () => {
-    if (!deletingTask) return null;
-    
-    const task = boardData.tasks[deletingTask];
-    if (!task) return null;
-    
-    return React.createElement(DeleteTaskDialog, {
-      task: task,
-      onConfirm: handleDeleteTaskConfirm,
-      onCancel: handleDeleteTaskCancel
-    });
-  };
-    
-
-  // Salva os dados quando houver alterações
-  React.useEffect(() => {
-    if (boardData && !loading) {
-      ipcRenderer.send('save-board', boardData);
+  const handleResetConfirm = async () => {
+    try {
+      setLoading(true);
+      const result = await window.electronAPI.resetBoard();
+      if (result.success) {
+        setBoardData(result.data);
+        showNotification('Dados resetados com sucesso!', 'success');
+      } else {
+        showNotification(result.message, 'error');
+      }
+    } catch (error) {
+      showNotification(`Erro ao resetar dados: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
+      setIsConfirmingReset(false);
     }
-  }, [boardData, loading]);
-
-  // Função para alternar o tema
-  const toggleTheme = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    if (newDarkMode) {
-      document.body.classList.add('dark-theme');
-    } else {
-      document.body.classList.remove('dark-theme');
-    }
-    localStorage.setItem('darkMode', newDarkMode);
   };
 
-  // Manipula a adição/edição de tarefas
+  // 5. Handlers de Tarefas
   const handleSaveTask = (columnId, task) => {
     const newBoardData = { ...boardData };
-
-    // Se for uma nova tarefa
     if (!newBoardData.tasks[task.id]) {
       newBoardData.tasks[task.id] = task;
       newBoardData.columns[columnId].taskIds.push(task.id);
-    } else { // Se for uma tarefa existente
+    } else {
       newBoardData.tasks[task.id] = task;
     }
-
     setBoardData(newBoardData);
     setActiveForm(null);
     setEditingTask(null);
   };
 
-  // Manipula o drag and drop
-  const handleDragEnd = (result) => {
-    const { destination, source, draggableId, type } = result;
-
-    // Se não houver destino ou for o mesmo local, não faz nada
-    if (!destination || (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    )) {
-      return;
-    }
-
-    // Se for drag and drop de uma coluna
-    if (type === 'column') {
-      const newColumnOrder = Array.from(boardData.columnOrder);
-      newColumnOrder.splice(source.index, 1);
-      newColumnOrder.splice(destination.index, 0, draggableId);
-
-      const newBoardData = {
-        ...boardData,
-        columnOrder: newColumnOrder
-      };
-
-      setBoardData(newBoardData);
-      return;
-    }
-
-    // Se for drag and drop de uma tarefa
-    const startColumn = boardData.columns[source.droppableId];
-    const endColumn = boardData.columns[destination.droppableId];
-
-    if (startColumn === endColumn) {
-      // Movendo na mesma coluna
-      const newTaskIds = Array.from(startColumn.taskIds);
-      newTaskIds.splice(source.index, 1);
-      newTaskIds.splice(destination.index, 0, draggableId);
-
-      const newColumn = {
-        ...startColumn,
-        taskIds: newTaskIds
-      };
-
-      const newBoardData = {
-        ...boardData,
-        columns: {
-          ...boardData.columns,
-          [newColumn.id]: newColumn
-        }
-      };
-
-      setBoardData(newBoardData);
-    } else {
-      // Movendo entre colunas
-      const startTaskIds = Array.from(startColumn.taskIds);
-      startTaskIds.splice(source.index, 1);
-      const newStartColumn = {
-        ...startColumn,
-        taskIds: startTaskIds
-      };
-
-      const endTaskIds = Array.from(endColumn.taskIds);
-      endTaskIds.splice(destination.index, 0, draggableId);
-      const newEndColumn = {
-        ...endColumn,
-        taskIds: endTaskIds
-      };
-
-      const newBoardData = {
-        ...boardData,
-        columns: {
-          ...boardData.columns,
-          [newStartColumn.id]: newStartColumn,
-          [newEndColumn.id]: newEndColumn
-        }
-      };
-
-      setBoardData(newBoardData);
-    }
-  };
-
-  // Manipula a edição de uma tarefa
   const handleEditTask = (taskId) => {
     setActiveForm(null);
     setEditingTask(taskId);
   };
 
-  // Adiciona uma nova coluna
+  const handleDeleteTaskStart = (taskId) => setDeletingTask(taskId);
+
+  const handleDeleteTaskConfirm = () => {
+    if (!deletingTask) return;
+    
+    const newBoardData = {...boardData};
+    let foundColumnId = null;
+    
+    Object.keys(newBoardData.columns).forEach(columnId => {
+      if (newBoardData.columns[columnId].taskIds.includes(deletingTask)) {
+        foundColumnId = columnId;
+      }
+    });
+    
+    if (foundColumnId) {
+      const column = newBoardData.columns[foundColumnId];
+      const newTaskIds = column.taskIds.filter(id => id !== deletingTask);
+      newBoardData.columns[foundColumnId] = {
+        ...column,
+        taskIds: newTaskIds
+      };
+      delete newBoardData.tasks[deletingTask];
+      setBoardData(newBoardData);
+    }
+    setDeletingTask(null);
+  };
+
+  const handleDeleteTaskCancel = () => setDeletingTask(null);
+
+  // 6. Handlers de Colunas
   const handleAddColumn = (title) => {
     const newColumnId = `column-${Date.now()}`;
     const newBoardData = {
@@ -919,11 +1026,9 @@ const App = () => {
       },
       columnOrder: [...boardData.columnOrder, newColumnId]
     };
-    
     setBoardData(newBoardData);
   };
 
-  // Renomeia uma coluna
   const handleRenameColumn = (columnId, newTitle) => {
     if (boardData.columns[columnId].title === newTitle) return;
     
@@ -937,70 +1042,135 @@ const App = () => {
         }
       }
     };
-    
     setBoardData(newBoardData);
   };
 
-  // Inicia o processo de exclusão de coluna
-  const handleDeleteColumnStart = (columnId) => {
-    setDeletingColumn(columnId);
-  };
+  const handleDeleteColumnStart = (columnId) => setDeletingColumn(columnId);
 
-  // Confirma a exclusão da coluna
   const handleDeleteColumnConfirm = () => {
     if (!deletingColumn) return;
     
-    const columnId = deletingColumn;
-    const taskIdsToDelete = boardData.columns[columnId].taskIds;
-    
-    // Cria um novo objeto de tarefas sem as tarefas da coluna excluída
+    const taskIdsToDelete = boardData.columns[deletingColumn].taskIds;
     const newTasks = { ...boardData.tasks };
-    taskIdsToDelete.forEach(taskId => {
-      delete newTasks[taskId];
-    });
+    taskIdsToDelete.forEach(taskId => delete newTasks[taskId]);
     
-    // Cria um novo objeto de colunas sem a coluna excluída
     const newColumns = { ...boardData.columns };
-    delete newColumns[columnId];
+    delete newColumns[deletingColumn];
     
-    // Atualiza a ordem de colunas
-    const newColumnOrder = boardData.columnOrder.filter(id => id !== columnId);
+    const newColumnOrder = boardData.columnOrder.filter(id => id !== deletingColumn);
     
-    const newBoardData = {
+    setBoardData({
       ...boardData,
       tasks: newTasks,
       columns: newColumns,
       columnOrder: newColumnOrder
-    };
-    
-    setBoardData(newBoardData);
+    });
     setDeletingColumn(null);
   };
 
-  // Cancela a exclusão da coluna
-  const handleDeleteColumnCancel = () => {
-    setDeletingColumn(null);
+  const handleDeleteColumnCancel = () => setDeletingColumn(null);
+
+  // 7. Handlers de DragAndDrop
+  const handleDragEnd = (result) => {
+    const { destination, source, draggableId, type } = result;
+
+    if (!destination || (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    )) {
+      return;
+    }
+
+    if (type === 'column') {
+      const newColumnOrder = Array.from(boardData.columnOrder);
+      newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, draggableId);
+
+      setBoardData({
+        ...boardData,
+        columnOrder: newColumnOrder
+      });
+      return;
+    }
+
+    const startColumn = boardData.columns[source.droppableId];
+    const endColumn = boardData.columns[destination.droppableId];
+
+    if (startColumn === endColumn) {
+      const newTaskIds = Array.from(startColumn.taskIds);
+      newTaskIds.splice(source.index, 1);
+      newTaskIds.splice(destination.index, 0, draggableId);
+
+      const newColumn = {
+        ...startColumn,
+        taskIds: newTaskIds
+      };
+
+      setBoardData({
+        ...boardData,
+        columns: {
+          ...boardData.columns,
+          [newColumn.id]: newColumn
+        }
+      });
+    } else {
+      const startTaskIds = Array.from(startColumn.taskIds);
+      startTaskIds.splice(source.index, 1);
+      const newStartColumn = {
+        ...startColumn,
+        taskIds: startTaskIds
+      };
+
+      const endTaskIds = Array.from(endColumn.taskIds);
+      endTaskIds.splice(destination.index, 0, draggableId);
+      const newEndColumn = {
+        ...endColumn,
+        taskIds: endTaskIds
+      };
+
+      setBoardData({
+        ...boardData,
+        columns: {
+          ...boardData.columns,
+          [newStartColumn.id]: newStartColumn,
+          [newEndColumn.id]: newEndColumn
+        }
+      });
+    }
   };
 
-  // Enquanto carrega, mostra uma mensagem
-  if (loading) {
-    return React.createElement('div', { className: 'loading' }, 'Carregando...');
-  }
+  // 8. Handlers de UI
+  const toggleTheme = async () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    document.body.classList.toggle('dark-theme', newDarkMode);
+    try {
+      await window.electronAPI.saveTheme(newDarkMode);
+    } catch (error) {
+      console.error('Erro ao salvar tema:', error);
+    }
+  };
 
-  // Dialog para edição de tarefa
+  // 9. Componentes de UI
+  const LoadingSpinner = () => {
+    return React.createElement(
+      'div',
+      { className: 'loading-container' },
+      React.createElement(
+        'div',
+        { className: 'loading-spinner' },
+        'Carregando...'
+      )
+    );
+  };
+
+  // 10. Renderizadores de Diálogos
   const renderEditDialog = () => {
     if (!editingTask) return null;
     
     const task = boardData.tasks[editingTask];
-    let columnId;
-    
-    // Encontra a coluna que contém a tarefa
-    for (const [id, column] of Object.entries(boardData.columns)) {
-      if (column.taskIds.includes(task.id)) {
-        columnId = id;
-        break;
-      }
-    }
+    let columnId = Object.entries(boardData.columns)
+      .find(([_, column]) => column.taskIds.includes(task.id))?.[0];
     
     return React.createElement(
       'div',
@@ -1014,14 +1184,10 @@ const App = () => {
           className: 'dialog-content',
           onClick: e => e.stopPropagation()
         },
-        React.createElement(
-          'h2',
-          { className: 'dialog-title' },
-          'Editar Tarefa'
-        ),
+        React.createElement('h2', { className: 'dialog-title' }, 'Editar Tarefa'),
         React.createElement(TaskForm, {
-          columnId: columnId,
-          task: task,
+          columnId,
+          task,
           onSave: handleSaveTask,
           onCancel: () => setEditingTask(null)
         })
@@ -1029,21 +1195,37 @@ const App = () => {
     );
   };
 
-  // Dialog para confirmação de exclusão de coluna
+  const renderDeleteTaskDialog = () => {
+    if (!deletingTask) return null;
+    
+    const task = boardData.tasks[deletingTask];
+    if (!task) return null;
+    
+    return React.createElement(DeleteTaskDialog, {
+      task,
+      onConfirm: handleDeleteTaskConfirm,
+      onCancel: handleDeleteTaskCancel
+    });
+  };
+
   const renderDeleteColumnDialog = () => {
     if (!deletingColumn) return null;
     
     const column = boardData.columns[deletingColumn];
-    
     return React.createElement(DeleteColumnDialog, {
-      column: column,
+      column,
       onConfirm: handleDeleteColumnConfirm,
       onCancel: handleDeleteColumnCancel
     });
   };
-  
-  // Garantir que boardData existe antes de renderizar o quadro
-  if (!boardData) {
+
+  // 11. Renderização Principal
+  if (loading) {
+    return React.createElement(LoadingSpinner);
+  }
+
+  if (!boardData || !boardData.columns || !boardData.columnOrder || !boardData.tasks) {
+    console.error('Dados inválidos:', boardData);
     return React.createElement(
       'div', 
       { className: 'error-message' }, 
@@ -1051,16 +1233,50 @@ const App = () => {
     );
   }
 
+  const columnOrder = Array.isArray(boardData.columnOrder) ? boardData.columnOrder : [];
+
   return React.createElement(
     React.Fragment,
     null,
-    React.createElement(TitleBar, { darkMode: darkMode }),
+    React.createElement(TitleBar, { darkMode }),
     React.createElement(
       'div',
       { className: 'app-header' },
-      React.createElement('div', { className: 'logo' }, 'Nanoban'),
-      React.createElement(ThemeToggle, { darkMode: darkMode, toggleTheme: toggleTheme })
+      React.createElement(
+        'div',
+        { className: 'header-left' },
+        React.createElement('div', { className: 'logo' }, 'Nanoban'),
+        React.createElement(
+          'div',
+          { className: 'system-info' },
+          currentUser && React.createElement('span', null, `Usuário: ${currentUser}, `),
+          currentTime && React.createElement('span', null, `data: ${currentTime}`)
+        )
+      ),
+      React.createElement(
+        'div',
+        { className: 'header-controls' },
+        React.createElement(DataOptionsMenu, {
+          onExport: handleExportData,
+          onImport: handleImportData,
+          onReset: handleResetData
+        }),
+        React.createElement('button', {
+          className: 'theme-toggle',
+          onClick: toggleTheme,
+          title: darkMode ? 'Mudar para tema claro' : 'Mudar para tema escuro'
+        }, darkMode ? '☀️' : '🌙')
+      )
     ),
+    notification && React.createElement(Notification, {
+      message: notification.message,
+      type: notification.type,
+      onClose: () => setNotification(null)
+    }),
+    isConfirmingReset && React.createElement(ConfirmResetDialog, {
+      onConfirm: handleResetConfirm,
+      onCancel: () => setIsConfirmingReset(false)
+    }),
     React.createElement(
       DragDropContext,
       { onDragEnd: handleDragEnd },
@@ -1074,13 +1290,25 @@ const App = () => {
             ref: provided.innerRef,
             ...provided.droppableProps
           },
-          boardData.columnOrder.map((columnId, index) => {
+          columnOrder.map((columnId, index) => {
             const column = boardData.columns[columnId];
-            const tasks = column.taskIds.map(taskId => boardData.tasks[taskId]);
+            // Verificação de segurança para a coluna
+            if (!column) {
+              console.error(`Coluna não encontrada para o ID: ${columnId}`);
+              return null;
+            }
+
+            const tasks = (column.taskIds || [])
+              .map(taskId => boardData.tasks[taskId])
+              .filter(task => task != null); // Filtrar tarefas indefinidas
             
             return React.createElement(
               Draggable,
-              { key: column.id, draggableId: column.id, index: index, type: 'column' },
+              { 
+                key: column.id, 
+                draggableId: column.id, 
+                index: index
+              },
               (provided) => React.createElement(
                 'div',
                 { 
@@ -1090,19 +1318,19 @@ const App = () => {
                   ...provided.dragHandleProps
                 },
                 React.createElement(Column, {
-                  column: column,
-                  tasks: tasks,
+                  column,
+                  tasks,
                   onAddTask: handleSaveTask,
                   onEditTask: handleEditTask,
                   onDeleteTask: handleDeleteTaskStart,
                   onRenameColumn: handleRenameColumn,
                   onDeleteColumn: handleDeleteColumnStart,
-                  activeForm: activeForm,
-                  setActiveForm: setActiveForm
+                  activeForm,
+                  setActiveForm
                 })
               )
             );
-          }),
+          }).filter(Boolean), // Filtrar elementos nulos
           provided.placeholder,
           React.createElement(AddColumnButton, {
             onAddColumn: handleAddColumn
@@ -1112,9 +1340,50 @@ const App = () => {
     ),
     renderEditDialog(),
     renderDeleteColumnDialog(),
-    renderDeleteTaskDialog(),
+    renderDeleteTaskDialog()
   );
 };
 
-const root = ReactDOM.createRoot(document.getElementById('app'));
-root.render(React.createElement(App));v
+// Exportar o componente
+window.App = App;
+
+const styles = `
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: var(--bg-primary);
+  }
+
+  .loading-spinner {
+    color: var(--text-color);
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .loading-spinner::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--text-muted);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const styleSheet = document.createElement('style');
+styleSheet.textContent = styles;
+document.head.appendChild(styleSheet);
+
+const root = document.getElementById('root');
+ReactDOM.render(React.createElement(App, null), root);
