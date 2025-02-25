@@ -11,7 +11,7 @@
   },
   "license": "MIT",
   "build": {
-    "appId": "br.dev.dimi.kanban",
+    "appId": "br.dev.dimi.nanoban",
     "productName": "Nanoban",
     "mac": {
       "category": "public.app-category.productivity"

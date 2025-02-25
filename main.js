@@ -101,7 +101,7 @@ app.whenReady().then(() => {
   
   const contextMenu = Menu.buildFromTemplate([
     { 
-      label: 'Abrir Kanban', 
+      label: 'Abrir Nanoban', 
       click: () => {
         mainWindow.show();
       }
@@ -115,7 +115,7 @@ app.whenReady().then(() => {
     }
   ]);
   
-  tray.setToolTip('Kanban Board');
+  tray.setToolTip('Nanoban');
   tray.setContextMenu(contextMenu);
   
   tray.on('click', () => {

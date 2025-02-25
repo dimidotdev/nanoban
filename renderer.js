@@ -24,6 +24,7 @@ const PrioritySelector = ({ priority, onChange }) => {
 };
 
 // Componente para a barra de título customizada
+// Componente para a barra de título customizada
 const TitleBar = ({ darkMode }) => {
   // Manipular eventos de controle da janela
   const handleMinimize = () => {
@@ -38,13 +39,43 @@ const TitleBar = ({ darkMode }) => {
     ipcRenderer.send('window-close');
   };
 
+  // Formato atual de data e usuário - você pode ajustar conforme necessário
+  const currentUser = 'dimidotdev';
+  
+  // SVGs para os botões de controle
+  const minimizeSvg = '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><rect height="1" width="10" y="4.5" x="0" /></svg>';
+  const maximizeSvg = '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><rect height="8" width="8" y="1" x="1" fill="none" stroke="currentColor" stroke-width="1.1" /></svg>';
+  const restoreSvg = '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M2.5,2v3.5h3.5v-3.5Z M4,0.5v1H1v3h1V1.5h3v-1Z" stroke="currentColor" fill="none" stroke-width="1.1"/></svg>';
+  const closeSvg = '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><path d="M1,1 L9,9 M9,1 L1,9" stroke="currentColor" stroke-width="1.1" fill="none" /></svg>';
+  const kanbanSvg = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M5.5,2 C4.67,2 4,2.67 4,3.5 L4,20.5 C4,21.33 4.67,22 5.5,22 L18.5,22 C19.33,22 20,21.33 20,20.5 L20,3.5 C20,2.67 19.33,2 18.5,2 L5.5,2 Z M10,4 L14,4 L14,10 L10,10 L10,4 Z M10,12 L14,12 L14,20 L10,20 L10,12 Z M6,4 L8,4 L8,14 L6,14 L6,4 Z M16,4 L18,4 L18,8 L16,8 L16,4 Z M16,10 L18,10 L18,20 L16,20 L16,10 Z M6,16 L8,16 L8,20 L6,20 L6,16 Z" /></svg>';
+  const userSvg = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M12,4 C13.93,4 15.5,5.57 15.5,7.5 C15.5,9.43 13.93,11 12,11 C10.07,11 8.5,9.43 8.5,7.5 C8.5,5.57 10.07,4 12,4 Z M12,13 C16.42,13 20,14.79 20,17 L20,20 L4,20 L4,17 C4,14.79 7.58,13 12,13 Z" /></svg>';
+
+  // Criar elemento para o SVG (método auxiliar para injetar HTML)
+  const createSvgElement = (svgString) => {
+    return {
+      __html: svgString
+    };
+  };
+
   return React.createElement(
     'div',
     { className: 'custom-titlebar' },
     React.createElement(
       'div',
       { className: 'title-drag-area' },
-      React.createElement('div', { className: 'window-title' }, 'Kanban Board')
+      React.createElement('div', { 
+        className: 'app-icon',
+        dangerouslySetInnerHTML: createSvgElement(kanbanSvg)
+      }),
+      React.createElement('div', { className: 'window-title' }, 'Nanoban'),
+      React.createElement(
+        'div',
+        { className: 'user-info' },
+        React.createElement('span', { 
+          dangerouslySetInnerHTML: createSvgElement(userSvg)
+        }),
+        currentUser
+      )
     ),
     React.createElement(
       'div',
@@ -56,7 +87,9 @@ const TitleBar = ({ darkMode }) => {
           onClick: handleMinimize,
           title: 'Minimizar'
         },
-        '—'
+        React.createElement('span', { 
+          dangerouslySetInnerHTML: createSvgElement(minimizeSvg)
+        })
       ),
       React.createElement(
         'button',
@@ -65,7 +98,9 @@ const TitleBar = ({ darkMode }) => {
           onClick: handleMaximize,
           title: 'Maximizar'
         },
-        '□'
+        React.createElement('span', { 
+          dangerouslySetInnerHTML: createSvgElement(maximizeSvg)
+        })
       ),
       React.createElement(
         'button',
@@ -74,7 +109,9 @@ const TitleBar = ({ darkMode }) => {
           onClick: handleClose,
           title: 'Fechar'
         },
-        '×'
+        React.createElement('span', { 
+          dangerouslySetInnerHTML: createSvgElement(closeSvg)
+        })
       )
     )
   );
@@ -867,7 +904,7 @@ const App = () => {
     React.createElement(
       'div',
       { className: 'app-header' },
-      React.createElement('div', { className: 'logo' }, 'Kanban Board'),
+      React.createElement('div', { className: 'logo' }, 'Nanoban'),
       React.createElement(ThemeToggle, { darkMode: darkMode, toggleTheme: toggleTheme })
     ),
     React.createElement(
