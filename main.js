@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Versão simples do electron-is-dev
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 // Caminho para o arquivo de dados
@@ -48,7 +47,7 @@ function createWindow() {
     titleBarStyle: 'hidden'
   });
 
-  // Comunicação IPC para controles da janela
+// Comunicação IPC para controles da janela
 ipcMain.on('window-minimize', () => {
   if (mainWindow) mainWindow.minimize();
 });
@@ -73,23 +72,23 @@ ipcMain.on('window-close', () => {
   }
 });
 
-  // Carrega o arquivo HTML da aplicação
-  mainWindow.loadFile('index.html');
+// Carrega o arquivo HTML da aplicação
+mainWindow.loadFile('index.html');
 
-  // Abre o DevTools automaticamente se estiver em desenvolvimento
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
+// Abre o DevTools automaticamente se estiver em desenvolvimento
+if (isDev) {
+  mainWindow.webContents.openDevTools();
+}
+
+// Impede que a janela seja fechada, apenas minimiza para a bandeja
+mainWindow.on('close', (e) => {
+  if (!app.isQuitting) {
+    e.preventDefault();
+    mainWindow.hide();
+    return false;
   }
-
-  // Impede que a janela seja fechada, apenas minimiza para a bandeja
-  mainWindow.on('close', (e) => {
-    if (!app.isQuitting) {
-      e.preventDefault();
-      mainWindow.hide();
-      return false;
-    }
-    return true;
-  });
+  return true;
+});
 }
 
 // Quando a aplicação estiver pronta, cria a janela

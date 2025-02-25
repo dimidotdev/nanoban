@@ -1,6 +1,6 @@
 {
   "name": "nanoban",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Nanoban é um quadro Kanban para uso pessoal, organização e acompanhamento das etapas do desenvolvimento dos projetos pessoais.",
   "main": "main.js",
   "author": "Matheus Silva",
@@ -12,8 +12,8 @@
   },
   "license": "MIT",
   "build": {
-    "appId": "com.dimidotdev.kanbanboard",
-    "productName": "Kanban Board",
+    "appId": "com.dimidotdev.nanoban",
+    "productName": "Nanoban",
     "directories": {
       "output": "dist"
     },

@@ -24,7 +24,6 @@ const PrioritySelector = ({ priority, onChange }) => {
 };
 
 // Componente para a barra de título customizada
-// Componente para a barra de título customizada
 const TitleBar = ({ darkMode }) => {
   // Manipular eventos de controle da janela
   const handleMinimize = () => {
@@ -40,7 +39,7 @@ const TitleBar = ({ darkMode }) => {
   };
 
   // Formato atual de data e usuário - você pode ajustar conforme necessário
-  const currentUser = 'dimidotdev';
+  const currentUser = 'Tester';
   
   // SVGs para os botões de controle
   const minimizeSvg = '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><rect height="1" width="10" y="4.5" x="0" /></svg>';
@@ -223,37 +222,94 @@ const ThemeToggle = ({ darkMode, toggleTheme }) => {
   );
 };
 
-// Componente de cartão de tarefa atualizado
-const TaskCard = ({ task, index, onEditTask }) => {
+// Componente de cartão
+const TaskCard = ({ task, index, onEditTask, onDeleteTask }) => {
+  // Formatação de data e prioridade permanece igual
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  const getPriorityClass = (priority) => {
+    switch (priority) {
+      case 'high': return 'priority-high';
+      case 'medium': return 'priority-medium';
+      case 'low': return 'priority-low';
+      default: return '';
+    }
+  };
+
+  const getPriorityLabel = (priority) => {
+    switch (priority) {
+      case 'high': return 'Alta';
+      case 'medium': return 'Média';
+      case 'low': return 'Baixa';
+      default: return 'Normal';
+    }
+  };
+
+  // Verificar se a data de vencimento passou
+  const isOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDueDate = new Date(dueDate);
+    return taskDueDate < today;
+  };
+
+  // Manipulador para impedir propagação de clique
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    onDeleteTask(task.id);
+  };
+
   return React.createElement(
     Draggable,
     { draggableId: task.id, index: index },
-    (provided) => {
+    (provided, snapshot) => {
       return React.createElement(
         'div',
         {
-          className: 'task-card',
-          ref: provided.innerRef,
+          className: `task-card ${snapshot.isDragging ? 'dragging' : ''}`,
           ...provided.draggableProps,
           ...provided.dragHandleProps,
+          ref: provided.innerRef,
           onClick: () => onEditTask(task.id)
         },
         React.createElement(
           'div',
-          { 
-            className: 'task-header',
-            style: {
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: '5px',
-              alignItems: 'center'
-            }
-          },
+          { className: 'task-header' },
           React.createElement('div', { className: 'task-title' }, task.title),
-          task.priority ? React.createElement(PriorityBadge, { priority: task.priority }) : null
+          React.createElement(
+            'div',
+            { className: 'task-actions' },
+            React.createElement(
+              'button',
+              { 
+                className: 'task-delete-btn',
+                onClick: handleDeleteClick,
+                title: 'Excluir tarefa'
+              },
+              '×'
+            )
+          )
         ),
-        React.createElement('div', { className: 'task-description' }, task.description),
-        task.dueDate ? React.createElement(DueDate, { date: task.dueDate }) : null
+        task.description && React.createElement('div', { className: 'task-description' }, task.description),
+        React.createElement(
+          'div',
+          { className: 'task-meta' },
+          task.priority && React.createElement(
+            'span',
+            { className: `priority-badge ${getPriorityClass(task.priority)}` },
+            getPriorityLabel(task.priority)
+          ),
+          task.dueDate && React.createElement(
+            'div',
+            { className: `due-date ${isOverdue(task.dueDate) ? 'overdue' : ''}` },
+            `Vencimento: ${formatDate(task.dueDate)}${isOverdue(task.dueDate) ? ' (Atrasado)' : ''}`
+          )
+        )
       );
     }
   );
@@ -324,8 +380,8 @@ const TaskForm = ({ columnId, task = null, onSave, onCancel }) => {
   );
 };
 
-// Componente de coluna
-const Column = ({ column, tasks, onAddTask, onEditTask, onRenameColumn, onDeleteColumn, activeForm, setActiveForm }) => {
+// Componente de coluna atualizado
+const Column = ({ column, tasks, onAddTask, onEditTask, onDeleteTask, onRenameColumn, onDeleteColumn, activeForm, setActiveForm }) => {
   return React.createElement(
     'div',
     { className: 'column' },
@@ -350,7 +406,8 @@ const Column = ({ column, tasks, onAddTask, onEditTask, onRenameColumn, onDelete
               key: task.id, 
               task, 
               index, 
-              onEditTask: onEditTask 
+              onEditTask: onEditTask,
+              onDeleteTask: onDeleteTask 
             })
           ),
           provided.placeholder,
@@ -570,6 +627,44 @@ const DeleteColumnDialog = ({ column, onConfirm, onCancel }) => {
   );
 };
 
+// Componente de diálogo de confirmação para exclusão de tarefa
+const DeleteTaskDialog = ({ task, onConfirm, onCancel }) => {
+  return React.createElement(
+    'div',
+    { 
+      className: 'dialog-overlay', 
+      onClick: onCancel 
+    },
+    React.createElement(
+      'div',
+      { 
+        className: 'dialog-content delete-task-dialog',
+        onClick: e => e.stopPropagation()
+      },
+      React.createElement('h2', null, 'Excluir Tarefa'),
+      React.createElement(
+        'p',
+        null,
+        `Tem certeza que deseja excluir a tarefa "${task.title}"?`
+      ),
+      React.createElement(
+        'div',
+        { className: 'dialog-buttons' },
+        React.createElement(
+          'button',
+          { className: 'cancel-btn', onClick: onCancel },
+          'Cancelar'
+        ),
+        React.createElement(
+          'button',
+          { className: 'delete-btn', onClick: onConfirm },
+          'Excluir'
+        )
+      )
+    )
+  );
+};
+
 // Componente principal da aplicação
 const App = () => {
   const [boardData, setBoardData] = React.useState(null);
@@ -578,6 +673,7 @@ const App = () => {
   const [editingTask, setEditingTask] = React.useState(null);
   const [darkMode, setDarkMode] = React.useState(false);
   const [deletingColumn, setDeletingColumn] = React.useState(null);
+  const [deletingTask, setDeletingTask] = React.useState(null);
 
   // Carrega os dados ao iniciar
   React.useEffect(() => {
@@ -626,6 +722,64 @@ const App = () => {
     
     loadData();
   }, []);
+
+  // Função para iniciar o processo de exclusão
+  const handleDeleteTaskStart = (taskId) => {
+    setDeletingTask(taskId);
+  };
+
+  // Função para confirmar a exclusão da tarefa
+  const handleDeleteTaskConfirm = () => {
+    if (!deletingTask) return;
+    
+    const newBoardData = {...boardData};
+    
+    // Encontrar a coluna que contém a tarefa
+    let foundColumnId = null;
+    
+    Object.keys(newBoardData.columns).forEach(columnId => {
+      const column = newBoardData.columns[columnId];
+      if (column.taskIds.includes(deletingTask)) {
+        foundColumnId = columnId;
+      }
+    });
+    
+    if (foundColumnId) {
+      // Remover a tarefa da coluna
+      const column = newBoardData.columns[foundColumnId];
+      const newTaskIds = column.taskIds.filter(id => id !== deletingTask);
+      
+      newBoardData.columns[foundColumnId] = {
+        ...column,
+        taskIds: newTaskIds
+      };
+      
+      // Excluir a tarefa do objeto de tarefas
+      delete newBoardData.tasks[deletingTask];
+      
+      setBoardData(newBoardData);
+    }
+    
+    setDeletingTask(null);
+  };
+
+  // Função para cancelar a exclusão
+  const handleDeleteTaskCancel = () => {
+    setDeletingTask(null);
+  };
+
+  const renderDeleteTaskDialog = () => {
+    if (!deletingTask) return null;
+    
+    const task = boardData.tasks[deletingTask];
+    if (!task) return null;
+    
+    return React.createElement(DeleteTaskDialog, {
+      task: task,
+      onConfirm: handleDeleteTaskConfirm,
+      onCancel: handleDeleteTaskCancel
+    });
+  };
     
 
   // Salva os dados quando houver alterações
@@ -940,6 +1094,7 @@ const App = () => {
                   tasks: tasks,
                   onAddTask: handleSaveTask,
                   onEditTask: handleEditTask,
+                  onDeleteTask: handleDeleteTaskStart,
                   onRenameColumn: handleRenameColumn,
                   onDeleteColumn: handleDeleteColumnStart,
                   activeForm: activeForm,
@@ -956,10 +1111,10 @@ const App = () => {
       )
     ),
     renderEditDialog(),
-    renderDeleteColumnDialog()
+    renderDeleteColumnDialog(),
+    renderDeleteTaskDialog(),
   );
 };
 
-// Renderiza o aplicativo React usando a nova API do React 18
 const root = ReactDOM.createRoot(document.getElementById('app'));
 root.render(React.createElement(App));v
